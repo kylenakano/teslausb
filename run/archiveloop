@@ -58,7 +58,7 @@ then
 fi
 if ! grep -q heartbeat "$STATUSLED/trigger"
 then
-  modprobe ledtrig-heartbeat || log "heartbeat LED trigger unavailable" 
+  modprobe ledtrig-heartbeat || log "heartbeat LED trigger unavailable"
 fi
 
 if [ -z "${ARCHIVE_SERVER+x}" ]
@@ -80,7 +80,7 @@ then
   esac
 elif [ "${ARCHIVE_SYSTEM:-none}" = "cifs" ]
 then
-  # For CIFS 
+  # For CIFS
   [[ -n "${SHARE_NAME:-}" && -f /backingfiles/cam_disk.bin ]] && export ARCHIVE_MOUNT=/mnt/archive
   [[ -n "${MUSIC_SHARE_NAME:-}" && -f /backingfiles/music_disk.bin ]] && export MUSIC_ARCHIVE_MOUNT=/mnt/musicarchive
 fi
@@ -374,7 +374,7 @@ function clean_cam_mount {
   if [ "$mode" = "freespace" ]
   then
     # Remove files, oldest first, until there is at least 20GB of free space
- 
+
     (cd "${CAM_MOUNT}"; find . -type f -a \( -path './TeslaCam/*' -o -path './TeslaTrackMode/*' \) -printf '%P\0') > /tmp/rmcandidates.txt
     if [ -s /tmp/rmcandidates.txt ]
     then
@@ -382,7 +382,7 @@ function clean_cam_mount {
     else
       true > /tmp/rmcandidatesbytime.txt
     fi
- 
+
     local freespace
     while read -r line
     do
@@ -591,6 +591,13 @@ function archive_teslacam_clips () {
             ;;
         esac
         echo "$line" >> "${sentrylist_archived}"
+
+        # Send progress message every 5 minutes
+        local now_ts=$(date +%s)
+        if (( now_ts - last_notify_ts >= 300 )); then
+          /root/bin/send-push-message "$NOTIFICATION_TITLE:" "Sync progress: $total_archived of $total_count files archived after $((now_ts - start_ts)) seconds." progress
+          last_notify_ts=$now_ts
+        fi
       fi
     done < ${sentrylist}
 
