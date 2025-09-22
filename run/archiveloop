@@ -592,10 +592,22 @@ function archive_teslacam_clips () {
         esac
         echo "$line" >> "${sentrylist_archived}"
 
-        # Send progress message every 5 minutes
+        # Send progress message every 5 minutes with upload stats
         local now_ts=$(date +%s)
         if (( now_ts - last_notify_ts >= 300 )); then
-          /root/bin/send-push-message "$NOTIFICATION_TITLE:" "Sync progress: $total_archived of $total_count files archived after $((now_ts - start_ts)) seconds." progress
+          local total_archived=$((sentry_archived + trackmode_archived))
+          local elapsed_time=$((now_ts - start_ts))
+          local files_per_second=0
+          local estimated_remaining=0
+
+          if (( elapsed_time > 0 )); then
+            files_per_second=$(awk "BEGIN {printf \"%.2f\", $total_archived / $elapsed_time}")
+            if (( total_archived > 0 )); then
+              estimated_remaining=$(awk "BEGIN {printf \"%.0f\", ($total_count - $total_archived) / ($total_archived / $elapsed_time)}")
+            fi
+          fi
+
+          /root/bin/send-push-message "$NOTIFICATION_TITLE:" "Sync progress: $total_archived of $total_count files ($((total_archived * 100 / total_count))%) - Rate: $files_per_second files/sec - ETA: ${estimated_remaining}s" progress
           last_notify_ts=$now_ts
         fi
       fi
